@@ -1727,14 +1727,20 @@ let activeChirps = []; // {x, y, type, timestamp, birdId}
 let emojiConversations = []; // {bird1, bird2, exchanges: [{bird, emoji, timestamp}], startTime}
 let lastEmojiConversationTime = 0;
 
-// Emoji sets for different situations
+// ENHANCED: Emoji sets for different situations with much more variety
 const EMOJI_SETS = {
-    FOOD: ['🌽', '🍞', '🐛', '🌰', '🍇', '🥜', '🌾'],
-    WEATHER: ['☀️', '🌧️', '❄️', '☁️', '🌈', '⛈️', '💨'],
-    STATES: ['😊', '😴', '🤔', '😋', '😰', '😎', '🥱', '🤗'],
-    NATURE: ['🌳', '🌸', '🍃', '💐', '🌺', '🦋', '🐝'],
-    REACTIONS: ['❓', '❗', '💭', '💬', '👀', '👍', '😅'],
-    RANDOM: ['🎵', '✨', '💫', '⭐', '🎨', '🎭', '🎪']
+    FOOD: ['🌽', '🍞', '🐛', '🌰', '🍇', '🥜', '🌾', '🍒', '🫐', '🍓', '🌻', '🥐', '🧀', '🥨'],
+    WEATHER: ['☀️', '🌧️', '❄️', '☁️', '🌈', '⛈️', '💨', '🌤️', '⛅', '🌥️', '🌦️', '🌨️', '💧', '⚡'],
+    STATES: ['😊', '😴', '🤔', '😋', '😰', '😎', '🥱', '🤗', '🤩', '😌', '🥰', '😅', '😂', '🤪', '😵‍💫'],
+    NATURE: ['🌳', '🌸', '🍃', '💐', '🌺', '🦋', '🐝', '🌻', '🌷', '🌹', '🏵️', '🌼', '🍂', '🌿', '🪴'],
+    REACTIONS: ['❓', '❗', '💭', '💬', '👀', '👍', '😅', '🤷', '👏', '🙌', '✌️', '🤝', '💪'],
+    RANDOM: ['🎵', '✨', '💫', '⭐', '🎨', '🎭', '🎪', '🎈', '🎉', '🎊', '🏆', '🎯', '🎲'],
+    PHILOSOPHY: ['🤔', '💭', '🌌', '🔮', '📚', '🧠', '💡', '🤯', '🌟', '🪐'],
+    GOSSIP: ['👀', '🤫', '😏', '🗣️', '👂', '💬', '😳', '🤭', '👁️'],
+    EXCITEMENT: ['🤩', '🎉', '🥳', '💃', '🕺', '🙌', '🎊', '🎈', '✨', '💥'],
+    COMPLAINT: ['😤', '😑', '🙄', '😒', '😮‍💨', '😩', '😫', '🤦', '💢'],
+    FRIENDSHIP: ['🤝', '💕', '🥰', '😊', '🫂', '💖', '🌈', '✨'],
+    MYSTERY: ['👻', '🎃', '🌙', '⭐', '🔮', '🪄', '✨', '🌟', '💫']
 };
 
 // Sentinel rotation tracking
@@ -1915,7 +1921,11 @@ let rainsCompleted = 0; // Track number of completed rain events (for pond forma
         // Responsive scaling for pathfinding thresholds based on screen height
         // Baseline: 900px height (common laptop resolution)
         // Higher resolution monitors get proportionally larger thresholds
-        const getResponsiveScale = () => Math.max(1.0, canvas.height / 900);
+        // ENHANCED: Clamped to reasonable range to prevent extreme zoom issues
+        const getResponsiveScale = () => {
+            const scale = canvas.height / 900;
+            return Math.max(0.8, Math.min(2.5, scale)); // Clamp between 0.8x and 2.5x
+        };
 
         const BIRD_MAX_HUNGER = 800;
         const BIRD_HUNGER_RATE = 0.006; // Further reduced from 0.02 to encourage less food hunting
@@ -6753,16 +6763,20 @@ function resetStuckBirds() {
             }
         }
         
-        // Enhanced stasis detection with more patience
+        // Enhanced stasis detection with more patience and zoom-aware thresholds
         if (bird.path && bird.path.length > 0 && bird.pathIndex < bird.path.length) {
             const waypoint = bird.path[bird.pathIndex];
             const waypointDist = distance(bird.x, bird.y, waypoint.x, waypoint.y);
-            
-            if (bird.lastWaypointDist && Math.abs(bird.lastWaypointDist - waypointDist) < 1 && bird.stateTimer > 2000) {
+
+            // ENHANCED: Zoom-aware "stuck" detection threshold
+            const responsiveScale = getResponsiveScale();
+            const stuckThreshold = 2 * responsiveScale; // Scale with zoom level
+
+            if (bird.lastWaypointDist && Math.abs(bird.lastWaypointDist - waypointDist) < stuckThreshold && bird.stateTimer > 2000) {
                 bird.waypointStuckTime = (bird.waypointStuckTime || 0) + 16;
-                
-                // Make waypoint skipping more patient
-                if (bird.waypointStuckTime > 400) { // Increased from 200
+
+                // Make waypoint skipping more patient and zoom-aware
+                if (bird.waypointStuckTime > 600) { // Increased from 400 for more patience
                     // Skip to next waypoint
                     bird.pathIndex++;
                     bird.waypointStuckTime = 0;
@@ -7896,35 +7910,53 @@ if (timeOfDay < 1 && Math.random() < 0.001) {
                     
                     // For longer paths, add intermediate points for more natural movement
                     const dist = distance(this.x, this.y, targetX, targetY);
-                    
+
                     if (dist > 100) { // Lower threshold for more frequent waypoints
                         // Add proportional waypoints based on distance
                         const controlPoints = Math.min(4, 1 + Math.floor(dist / 150)); // More waypoints
-                        
+
                         for (let i = 0; i < controlPoints; i++) {
                             const progress = (i + 1) / (controlPoints + 1);
-                            
+
                             // Distance-based arc height for natural flight
                             const arcHeight = Math.sin(progress * Math.PI) * Math.min(60, dist * 0.2);
-                            
-                            // Avoid creating waypoints in problem areas
+
+                            // ENHANCED: Avoid creating waypoints near trees and problem areas
                             let wayX;
+                            let wayY;
                             let attempts = 0;
-                            
+                            const treeAvoidanceRadius = 80 * responsiveScale; // Wider avoidance for tree clusters
+
                             do {
                                 // Small random offset for more natural path
                                 const randomOffset = (Math.random() - 0.5) * (dist * 0.1);
                                 wayX = this.x + (targetX - this.x) * progress + randomOffset;
+
+                                // Calculate y position with arc and random variation
+                                const baseY = this.y + (targetY - this.y) * progress;
+                                wayY = Math.max(50, Math.min(baseY - arcHeight, canvas.height * 0.7));
+
                                 attempts++;
-                            } while (
-                                attempts < 5 && 
-                                problemAreas.some(area => Math.abs(wayX - area.x) < area.radius)
-                            );
-                            
-                            // Calculate y position with arc and random variation
-                            const baseY = this.y + (targetY - this.y) * progress;
-                            const wayY = Math.max(50, Math.min(baseY - arcHeight, canvas.height * 0.7));
-                            
+
+                                // Check if waypoint is too close to any tree trunk
+                                const nearTree = trees.some(tree => {
+                                    const treeDist = distance(wayX, wayY, tree.x, tree.y - tree.trunkHeight * 0.5 * tree.scale);
+                                    return treeDist < treeAvoidanceRadius;
+                                });
+
+                                const nearProblem = problemAreas.some(area => Math.abs(wayX - area.x) < area.radius);
+
+                                // Break if we found a good spot or tried too many times
+                                if ((!nearTree && !nearProblem) || attempts >= 8) {
+                                    break;
+                                }
+                            } while (attempts < 8);
+
+                            // If still near trees after all attempts, fly higher to avoid them
+                            if (trees.some(tree => distance(wayX, wayY, tree.x, tree.y - tree.trunkHeight * 0.5 * tree.scale) < treeAvoidanceRadius)) {
+                                wayY = Math.max(50, wayY - 80); // Fly higher
+                            }
+
                             this.path.push({ x: wayX, y: wayY });
                         }
                     }
@@ -18007,19 +18039,18 @@ function spawnOwls() {
             // Recursively call playWindChimes to play next sound and schedule the next one
             playWindChimes();
         }, nextChimeDelay);
+    } else {
+        // Not time to play yet, check again soon
+        if (windChimeTimeout) {
+            clearTimeout(windChimeTimeout);
+        }
+        windChimeTimeout = setTimeout(() => {
+            playWindChimes();
+        }, 5000); // Check again in 5 seconds
     }
-    
-    // Update button text
-    const toggleWindChimeBtn = document.getElementById('toggleWindChimeBtn');
-    if (toggleWindChimeBtn) {
-        toggleWindChimeBtn.textContent = '🔔 Wind Chimes: OFF';
-        toggleWindChimeBtn.style.background = '#f44336'; // Red background
-    }
-
-    debugLog("Wind chimes disabled due to timeout");
 }
 
-        // EMOJI CONVERSATION SYSTEM
+        // ENHANCED EMOJI CONVERSATION SYSTEM
         function startEmojiConversation() {
             const now = Date.now();
 
@@ -18043,41 +18074,96 @@ function spawnOwls() {
 
             const bird2 = nearbyBirds[Math.floor(Math.random() * nearbyBirds.length)];
 
-            // Choose a conversation topic based on current conditions
-            let emojiSet = EMOJI_SETS.RANDOM;
-            const rand = Math.random();
+            // ENHANCED: Choose conversation type with more variety and mixing
+            let conversationType = 'RANDOM';
+            let primarySet = EMOJI_SETS.RANDOM;
+            let secondarySet = null;
 
-            if (isRaining) {
-                emojiSet = EMOJI_SETS.WEATHER;
-            } else if (foodItems.length > 10) {
-                emojiSet = EMOJI_SETS.FOOD;
-            } else if (Math.random() < 0.3) {
-                emojiSet = EMOJI_SETS.NATURE;
-            } else if (Math.random() < 0.5) {
-                emojiSet = EMOJI_SETS.STATES;
+            const typeRoll = Math.random();
+
+            // Context-based conversation selection
+            if (isRaining && typeRoll < 0.3) {
+                conversationType = 'WEATHER_COMPLAINT';
+                primarySet = EMOJI_SETS.WEATHER;
+                secondarySet = EMOJI_SETS.COMPLAINT;
+            } else if (food.length > 10 && typeRoll < 0.4) {
+                conversationType = 'FOOD_EXCITEMENT';
+                primarySet = EMOJI_SETS.FOOD;
+                secondarySet = EMOJI_SETS.EXCITEMENT;
+            } else if (timeOfDay >= 1 && typeRoll < 0.2) {
+                conversationType = 'NIGHT_MYSTERY';
+                primarySet = EMOJI_SETS.MYSTERY;
+                secondarySet = EMOJI_SETS.PHILOSOPHY;
+            } else if (typeRoll < 0.15) {
+                conversationType = 'GOSSIP';
+                primarySet = EMOJI_SETS.GOSSIP;
+                secondarySet = EMOJI_SETS.REACTIONS;
+            } else if (typeRoll < 0.25) {
+                conversationType = 'PHILOSOPHY';
+                primarySet = EMOJI_SETS.PHILOSOPHY;
+                secondarySet = EMOJI_SETS.RANDOM;
+            } else if (typeRoll < 0.35) {
+                conversationType = 'FRIENDSHIP';
+                primarySet = EMOJI_SETS.FRIENDSHIP;
+                secondarySet = EMOJI_SETS.STATES;
+            } else if (typeRoll < 0.5) {
+                conversationType = 'NATURE';
+                primarySet = EMOJI_SETS.NATURE;
+                secondarySet = EMOJI_SETS.STATES;
+            } else {
+                // Truly random "show about nothing"
+                conversationType = 'ABSURD';
+                const allSets = Object.values(EMOJI_SETS);
+                primarySet = allSets[Math.floor(Math.random() * allSets.length)];
+                secondarySet = allSets[Math.floor(Math.random() * allSets.length)];
             }
 
-            // Start conversation with 3-5 exchanges
-            const numExchanges = 3 + Math.floor(Math.random() * 3);
+            // ENHANCED: Longer conversations with better structure (4-7 exchanges)
+            const numExchanges = 4 + Math.floor(Math.random() * 4);
             const exchanges = [];
 
-            // Pick a shared emoji that both birds might use (for repeating)
-            const sharedEmoji = emojiSet[Math.floor(Math.random() * emojiSet.length)];
+            // Pick 1-2 shared emojis that both birds might repeat (thematic agreement)
+            const sharedEmoji1 = primarySet[Math.floor(Math.random() * primarySet.length)];
+            const sharedEmoji2 = primarySet[Math.floor(Math.random() * primarySet.length)];
 
-            // Create exchanges
+            // Create exchanges with better pacing and variety
             for (let i = 0; i < numExchanges; i++) {
                 const currentBird = i % 2 === 0 ? bird1 : bird2;
-
-                // 30% chance to use shared emoji (birds "agreeing" on a topic)
                 let emoji;
-                if (i > 0 && Math.random() < 0.3) {
-                    emoji = sharedEmoji;
-                } else {
-                    // Mix in reactions occasionally
-                    if (i > 1 && Math.random() < 0.25) {
+
+                // ENHANCED: Better conversation flow
+                if (i === 0) {
+                    // First exchange: introduce topic
+                    emoji = sharedEmoji1;
+                } else if (i === 1) {
+                    // Second exchange: respond or question
+                    if (Math.random() < 0.4) {
                         emoji = EMOJI_SETS.REACTIONS[Math.floor(Math.random() * EMOJI_SETS.REACTIONS.length)];
                     } else {
-                        emoji = emojiSet[Math.floor(Math.random() * emojiSet.length)];
+                        emoji = primarySet[Math.floor(Math.random() * primarySet.length)];
+                    }
+                } else if (i === numExchanges - 1) {
+                    // Last exchange: conclusion or agreement
+                    if (Math.random() < 0.5) {
+                        emoji = sharedEmoji1; // Callback to original topic
+                    } else {
+                        emoji = EMOJI_SETS.REACTIONS[Math.floor(Math.random() * EMOJI_SETS.REACTIONS.length)];
+                    }
+                } else {
+                    // Middle exchanges: mix of primary, secondary, reactions, and repetition
+                    const roll = Math.random();
+                    if (roll < 0.25 && i > 1) {
+                        // Repeat for emphasis
+                        emoji = sharedEmoji2;
+                    } else if (roll < 0.4 && secondarySet) {
+                        // Mix in secondary topic
+                        emoji = secondarySet[Math.floor(Math.random() * secondarySet.length)];
+                    } else if (roll < 0.6) {
+                        // React
+                        emoji = EMOJI_SETS.REACTIONS[Math.floor(Math.random() * EMOJI_SETS.REACTIONS.length)];
+                    } else {
+                        // Primary topic
+                        emoji = primarySet[Math.floor(Math.random() * primarySet.length)];
                     }
                 }
 
@@ -18093,11 +18179,12 @@ function spawnOwls() {
                 bird2: bird2,
                 exchanges: exchanges,
                 startTime: now,
-                currentExchange: 0
+                currentExchange: 0,
+                type: conversationType
             });
 
             lastEmojiConversationTime = now;
-            debugLog(`Emoji conversation started between ${getBirdName(bird1)} and ${getBirdName(bird2)}!`);
+            debugLog(`${conversationType} emoji conversation started between ${getBirdName(bird1)} and ${getBirdName(bird2)}!`);
         }
 
         // Get emoji based on bird's current state
