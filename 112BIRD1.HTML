@@ -4413,14 +4413,16 @@ document.addEventListener('visibilitychange', function() {
             scarecrow.y = canvas.height * GROUND_HEIGHT_RATIO;
         }
                 
-                // FIXED: Scale tree positions proportionally to maintain natural spacing and clustering
+                // FIXED: Keep trees at absolute positions, only adjust Y for ground level
                 if (trees.length > 0) {
                     trees.forEach((tree) => {
                         const oldTreeX = tree.x;
                         const oldTreeY = tree.y;
 
-                        // Scale X position proportionally to new width (preserves clustering)
-                        tree.x = tree.x * scaleX;
+                        // Don't move tree X position - keep natural placement
+                        // Only clamp to keep on screen if needed
+                        if (tree.x < 50) tree.x = 50;
+                        if (tree.x > canvas.width - 50) tree.x = canvas.width - 50;
 
                         // Keep trees properly grounded at the new ground level, preserving depth offset
                         tree.y = newGroundLevel + (tree.depthOffset || 0);
