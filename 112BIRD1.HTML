@@ -43,6 +43,8 @@
             padding: 10px;
             border-radius: 5px;
             max-width: 200px;
+            max-height: 80vh;
+            overflow-y: auto;
             font-size: 12px;
             z-index: 10;
             color: #3366CC
@@ -1793,6 +1795,10 @@ let rainsCompleted = 0; // Track number of completed rain events (for pond forma
             'Dusk', 'River', 'Brook', 'Meadow', 'Forest', 'Sage', 'Basil', 'Rosemary',
             'Jasper', 'Onyx', 'Pearl', 'Amber', 'Jade', 'Coral', 'Ivy', 'Fern',
             'Thistle', 'Clover', 'Poppy', 'Daisy', 'Violet', 'Lily', 'Rose', 'Iris',
+            // Additional nature names
+            'Hazel', 'Indigo', 'Sapphire', 'Sienna', 'Topaz', 'Crimson', 'Azure', 'Olive',
+            'Aspen', 'Cypress', 'Juniper', 'Magnolia', 'Sequoia', 'Sycamore', 'Zinnia', 'Azalea',
+            'Canyon', 'Delta', 'Echo', 'Frost', 'Glacier', 'Harbor', 'Mesa', 'Prairie',
             // Normal American names
             'Alex', 'Sam', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Quinn',
             'Charlie', 'Jamie', 'Blake', 'Drew', 'Parker', 'Avery', 'Reese', 'Harper',
@@ -1807,7 +1813,11 @@ let rainsCompleted = 0; // Track number of completed rain events (for pond forma
             'John', 'Natalie', 'Luke', 'Abby', 'Nick', 'Katie', 'Tom', 'Molly',
             'Will', 'Annie', 'Jake', 'Maggie', 'Pete', 'Becky', 'Frank', 'Jenny',
             'Steve', 'Laura', 'Bob', 'Amy', 'Tim', 'Beth', 'Mark', 'Claire',
-            'Paul', 'Diana', 'Rick', 'Fiona', 'Greg', 'Heather', 'Dan', 'Jessica'
+            'Paul', 'Diana', 'Rick', 'Fiona', 'Greg', 'Heather', 'Dan', 'Jessica',
+            // Additional American names
+            'William', 'Seth', 'Justin', 'Michelle', 'Romeo', 'Elizabeth', 'Anne', 'Brandon',
+            'Samantha', 'Tyler', 'Ashley', 'Derek', 'Melissa', 'Trevor', 'Nicole', 'Dustin',
+            'Brittany', 'Marcus', 'Vanessa', 'Keith', 'Stephanie', 'Jeremy', 'Christina', 'Vincent'
         ];
 
         // Squirrel name pool
@@ -11514,26 +11524,45 @@ ctx.fill();
                 ctx.fill();
                 
                 // Eyes with pupil and highlight for cuter appearance
-                ctx.fillStyle = 'black';
-                ctx.beginPath();
-                ctx.arc(
-                    this.x + (this.direction * 8 * sizeMultiplier), 
-                    this.y - 3 * sizeMultiplier + yOffset, 
-                    2 * sizeMultiplier,
-                    0, Math.PI * 2
-                );
-                ctx.fill();
-                
-                // Add white highlight to eyes for cute effect
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(
-                    this.x + (this.direction * 8.5 * sizeMultiplier), 
-                    this.y - 3.5 * sizeMultiplier + yOffset, 
-                    0.8 * sizeMultiplier,
-                    0, Math.PI * 2
-                );
-                ctx.fill();
+                // ENHANCED: Draw closed eyes when sleeping
+                if (this.state === BIRD_STATES.SLEEPING) {
+                    // Draw closed eyes (horizontal lines)
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1.5 * sizeMultiplier;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    // Draw a gentle curved line for closed eye
+                    const eyeX = this.x + (this.direction * 8 * sizeMultiplier);
+                    const eyeY = this.y - 3 * sizeMultiplier + yOffset;
+                    ctx.moveTo(eyeX - 2 * sizeMultiplier, eyeY);
+                    ctx.quadraticCurveTo(
+                        eyeX, eyeY + 0.5 * sizeMultiplier,
+                        eyeX + 2 * sizeMultiplier, eyeY
+                    );
+                    ctx.stroke();
+                } else {
+                    // Draw open eyes
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(
+                        this.x + (this.direction * 8 * sizeMultiplier),
+                        this.y - 3 * sizeMultiplier + yOffset,
+                        2 * sizeMultiplier,
+                        0, Math.PI * 2
+                    );
+                    ctx.fill();
+
+                    // Add white highlight to eyes for cute effect
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(
+                        this.x + (this.direction * 8.5 * sizeMultiplier),
+                        this.y - 3.5 * sizeMultiplier + yOffset,
+                        0.8 * sizeMultiplier,
+                        0, Math.PI * 2
+                    );
+                    ctx.fill();
+                }
                 
                 // Draw carried twig if holding materials
                 if (this.materialsHeld > 0) {
@@ -12402,12 +12431,13 @@ class Squirrel {
                 }
                 
                 // Check for nearby trees to jump to (branch traversal)
-                if (this.stateTimer > 3000 && Math.random() < 0.01) {
+                // ENHANCED: More frequent jumping (3% chance) and slightly larger distance (120px)
+                if (this.stateTimer > 3000 && Math.random() < 0.03) {
                     // Look for nearby trees
                     const nearbyTrees = trees.filter(tree =>
                         tree !== this.climbingTree &&
-                        Math.abs(tree.x - this.climbingTree.x) < 80 && // Trees within 80px
-                        Math.abs((tree.y - tree.trunkHeight * 0.8 * tree.scale) - this.y) < 40 // Similar height
+                        Math.abs(tree.x - this.climbingTree.x) < 120 && // Trees within 120px (few inches)
+                        Math.abs((tree.y - tree.trunkHeight * 0.8 * tree.scale) - this.y) < 60 // Similar height (more lenient)
                     );
 
                     if (nearbyTrees.length > 0) {
@@ -17118,16 +17148,8 @@ function spawnOwls() {
         owls.push(owl);
         const owlName = getOwlName(owl);
 
-        // Play owl hoot if wind chimes enabled
-        if (windChimeEnabled && audioContext) {
-            // Play owl hoot sound
-            const notes = ['C3', 'G3'];
-            for (let i = 0; i < notes.length; i++) {
-                setTimeout(() => {
-                    playNote(notes[i], 0.8);
-                }, i * 500);
-            }
-        }
+        // Play owl hoot sound
+        playOwlHoot();
 
         debugLog(`Owl ${owlName} spawned at (${owl.x}, ${owl.y})${ratKingPresent ? ' attracted by rat king' : ''}`);
 
@@ -17687,27 +17709,61 @@ function spawnOwls() {
                 gainNode.gain.linearRampToValueAtTime(volume, now + 0.01);
                 console.log("Chirp playing - volume:", volume, "length:", chirpLength);
 
-                // Musical frequency modulation - jump to scale tones
-                if (chirpPattern === 1) {
-                    // Single note with vibrato
-                    osc.frequency.setValueAtTime(baseFreq, now);
-                    osc.frequency.linearRampToValueAtTime(baseFreq * 1.05, now + chirpLength * 0.3);
-                    osc.frequency.linearRampToValueAtTime(baseFreq, now + chirpLength);
-                } else if (chirpPattern === 2) {
-                    // Two note pattern (interval jump)
-                    const nextNoteIndex = Math.min(noteIndex + 2, scale.length - 1);
-                    const nextFreq = scale[nextNoteIndex] * pitchVariation;
-                    osc.frequency.setValueAtTime(baseFreq, now);
-                    osc.frequency.linearRampToValueAtTime(nextFreq, now + chirpLength * 0.5);
-                    osc.frequency.linearRampToValueAtTime(nextFreq * 0.95, now + chirpLength);
-                } else {
-                    // Three note trill
-                    const nextNote1 = scale[Math.min(noteIndex + 1, scale.length - 1)] * pitchVariation;
-                    const nextNote2 = scale[Math.min(noteIndex + 3, scale.length - 1)] * pitchVariation;
-                    osc.frequency.setValueAtTime(baseFreq, now);
-                    osc.frequency.linearRampToValueAtTime(nextNote1, now + chirpLength * 0.3);
-                    osc.frequency.linearRampToValueAtTime(nextNote2, now + chirpLength * 0.7);
-                    osc.frequency.linearRampToValueAtTime(nextNote2 * 0.95, now + chirpLength);
+                // ENHANCED: Musical frequency modulation with 6 different melodic patterns
+                const pattern = chirpPattern % 6;
+                switch(pattern) {
+                    case 0:
+                        // Single note with vibrato
+                        osc.frequency.setValueAtTime(baseFreq, now);
+                        osc.frequency.linearRampToValueAtTime(baseFreq * 1.05, now + chirpLength * 0.3);
+                        osc.frequency.linearRampToValueAtTime(baseFreq, now + chirpLength);
+                        break;
+                    case 1:
+                        // Two note pattern (interval jump up)
+                        const nextNoteIndex = Math.min(noteIndex + 2, scale.length - 1);
+                        const nextFreq = scale[nextNoteIndex] * pitchVariation;
+                        osc.frequency.setValueAtTime(baseFreq, now);
+                        osc.frequency.linearRampToValueAtTime(nextFreq, now + chirpLength * 0.5);
+                        osc.frequency.linearRampToValueAtTime(nextFreq * 0.95, now + chirpLength);
+                        break;
+                    case 2:
+                        // Three note trill (up-up-down)
+                        const nextNote1 = scale[Math.min(noteIndex + 1, scale.length - 1)] * pitchVariation;
+                        const nextNote2 = scale[Math.min(noteIndex + 3, scale.length - 1)] * pitchVariation;
+                        osc.frequency.setValueAtTime(baseFreq, now);
+                        osc.frequency.linearRampToValueAtTime(nextNote1, now + chirpLength * 0.3);
+                        osc.frequency.linearRampToValueAtTime(nextNote2, now + chirpLength * 0.6);
+                        osc.frequency.linearRampToValueAtTime(baseFreq, now + chirpLength);
+                        break;
+                    case 3:
+                        // Descending pattern (songbird style)
+                        const lowerNote1 = scale[Math.max(noteIndex - 1, 0)] * pitchVariation;
+                        const lowerNote2 = scale[Math.max(noteIndex - 2, 0)] * pitchVariation;
+                        osc.frequency.setValueAtTime(baseFreq, now);
+                        osc.frequency.linearRampToValueAtTime(lowerNote1, now + chirpLength * 0.4);
+                        osc.frequency.linearRampToValueAtTime(lowerNote2, now + chirpLength * 0.8);
+                        osc.frequency.setValueAtTime(lowerNote2, now + chirpLength);
+                        break;
+                    case 4:
+                        // Warble (up and down quickly)
+                        const warbleUp = scale[Math.min(noteIndex + 2, scale.length - 1)] * pitchVariation;
+                        osc.frequency.setValueAtTime(baseFreq, now);
+                        osc.frequency.linearRampToValueAtTime(warbleUp, now + chirpLength * 0.25);
+                        osc.frequency.linearRampToValueAtTime(baseFreq, now + chirpLength * 0.5);
+                        osc.frequency.linearRampToValueAtTime(warbleUp, now + chirpLength * 0.75);
+                        osc.frequency.linearRampToValueAtTime(baseFreq, now + chirpLength);
+                        break;
+                    case 5:
+                        // Four note cascade (melodic)
+                        const n1 = scale[Math.min(noteIndex + 1, scale.length - 1)] * pitchVariation;
+                        const n2 = scale[Math.min(noteIndex + 2, scale.length - 1)] * pitchVariation;
+                        const n3 = scale[Math.min(noteIndex + 4, scale.length - 1)] * pitchVariation;
+                        osc.frequency.setValueAtTime(baseFreq, now);
+                        osc.frequency.linearRampToValueAtTime(n1, now + chirpLength * 0.25);
+                        osc.frequency.linearRampToValueAtTime(n2, now + chirpLength * 0.5);
+                        osc.frequency.linearRampToValueAtTime(n3, now + chirpLength * 0.75);
+                        osc.frequency.setValueAtTime(n3 * 0.95, now + chirpLength);
+                        break;
                 }
 
                 // End the chirp
@@ -17722,6 +17778,75 @@ function spawnOwls() {
                 }
             } catch (e) {
                 console.error("Error playing bird chirp:", e);
+            }
+        }
+
+        // Owl hoot sound synthesis
+        function playOwlHoot() {
+            // Check if muted first
+            if (isMuted) return;
+
+            // Initialize audio context if needed
+            if (!audioContext) {
+                initializeAudio();
+            }
+
+            // Resume audio context if suspended
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            if (!audioContext) return;
+
+            try {
+                // Classic owl "hoo-hoo" pattern
+                const hootTimes = [0, 0.5]; // Two hoots
+                const baseFreq = 200; // Low frequency for owl
+
+                hootTimes.forEach((startTime) => {
+                    const now = audioContext.currentTime + startTime;
+
+                    // Create oscillator for the hoot
+                    const osc = audioContext.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.value = baseFreq;
+
+                    // Create gain node for volume envelope
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = 0;
+
+                    // Create filter for that hollow owl sound
+                    const filter = audioContext.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 500;
+                    filter.Q.value = 5;
+
+                    // Connect nodes
+                    osc.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    // Start oscillator
+                    osc.start(now);
+
+                    // Hoot envelope - quick attack, short sustain, quick release
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(0.15, now + 0.05); // Quick attack
+                    gainNode.gain.setValueAtTime(0.15, now + 0.2); // Sustain
+                    gainNode.gain.linearRampToValueAtTime(0, now + 0.35); // Release
+
+                    // Frequency modulation for realistic hoot
+                    osc.frequency.setValueAtTime(baseFreq, now);
+                    osc.frequency.linearRampToValueAtTime(baseFreq * 0.95, now + 0.15); // Slight drop
+                    osc.frequency.linearRampToValueAtTime(baseFreq * 0.9, now + 0.35); // Further drop at end
+
+                    // Stop oscillator
+                    osc.stop(now + 0.4);
+                });
+
+                debugLog("Owl hoot played");
+            } catch (e) {
+                console.error("Error playing owl hoot:", e);
             }
         }
 
@@ -17826,10 +17951,9 @@ function spawnOwls() {
     // Update wind chime state
     const now = Date.now();
 
-    // IMPROVED TIMING: More frequent chimes for better audio feedback (8-20 seconds)
-    // ENHANCED: More frequent chimes during rain (3-10 seconds)
-    const baseDelay = isRaining ? 3000 : 8000;
-    const randomDelay = isRaining ? 7000 : 12000;
+    // TIMING: One chime every 30-45 seconds normally, more frequent during rain (15-25 seconds)
+    const baseDelay = isRaining ? 15000 : 30000;
+    const randomDelay = isRaining ? 10000 : 15000;
     if (now - lastWindChimeTime > baseDelay + Math.random() * randomDelay) {
         // ENHANCED: Multiple wind chime melodies for more variety
         const melodies = [
@@ -18351,9 +18475,17 @@ function spawnOwls() {
 
             // Build the time string and draw each character individually
             const timeText = `${hourStr}:${minuteStr}`;
-            const charWidth = 160; // approximate width per character (doubled from 80)
-            const totalWidth = timeText.length * charWidth;
-            const startTextX = clockCenterX - (totalWidth / 2);
+
+            // Calculate precise character widths for centering
+            // Digits are ~160px wide, colon is ~80px wide
+            const digitWidth = 160;
+            const colonWidth = 80;
+            // Total: 2 digits + colon + 2 digits = 160+160+80+160+160 = 720
+            const totalWidth = (digitWidth * 4) + colonWidth;
+
+            // Start position ensures the COLON is centered
+            const colonCenterX = clockCenterX;
+            const startTextX = colonCenterX - (digitWidth * 2) - (colonWidth / 2);
 
             // Check which birds are perched on clock numbers
             const birdsOnClock = [];
@@ -18379,17 +18511,31 @@ function spawnOwls() {
             // Draw each character with individual opacity based on bird presence
             for (let i = 0; i < timeText.length; i++) {
                 const char = timeText[i];
-                const charX = startTextX + (i * charWidth);
+                // Calculate X position based on character type (colon is narrower)
+                let charX;
+                if (i === 0) {
+                    charX = startTextX + digitWidth;
+                } else if (i === 1) {
+                    charX = startTextX + digitWidth * 2;
+                } else if (i === 2) {
+                    // This is the colon - center it precisely
+                    charX = colonCenterX;
+                } else if (i === 3) {
+                    charX = colonCenterX + colonWidth;
+                } else {
+                    charX = colonCenterX + colonWidth + digitWidth;
+                }
                 const charY = clockY;
 
                 // Check if a bird is near this character
                 let birdNearby = false;
 
                 // Store position for perching (including colon!)
+                const currentCharWidth = char === ':' ? colonWidth : digitWidth;
                 window.clockNumberPositions.push({
                     x: charX,
                     y: clockY - 100, // top of numbers (adjusted for larger size)
-                    width: charWidth,
+                    width: currentCharWidth,
                     charIndex: i,
                     char: char,
                     isColon: char === ':'
@@ -18433,10 +18579,11 @@ function spawnOwls() {
                 window.previousClockTime = timeText;
             }
 
-            // Draw weather forecast icons below clock
+            // Draw weather forecast icons below clock - CENTERED
             const forecastY = clockY + 180;
-            const iconSpacing = 120; // Slightly larger spacing
-            const startX = clockCenterX - iconSpacing;
+            const iconSpacing = 120; // Spacing between icons
+            // Center 3 icons: place middle icon at center, others at ±iconSpacing
+            const startX = clockCenterX - iconSpacing; // First icon left of center
 
             ctx.font = '60px Arial'; // Slightly larger icons
             ctx.shadowBlur = 5;
@@ -19309,6 +19456,94 @@ for (let i = owls.length - 1; i >= 0; i--) {
 
     // Clean up old territorial disputes
     territorialDisputes = territorialDisputes.filter(d => now - d.startTime < 10000);
+
+    // MEMORY LEAK PREVENTION: Comprehensive array cleanup to prevent night crashes
+    // Clean up old fireflies (should be removed at dawn anyway)
+    if (fireflies.length > 100) {
+        fireflies = fireflies.slice(0, 100);
+        debugLog("MEMORY: Fireflies array capped at 100", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old food (prevent accumulation)
+    if (food.length > 200) {
+        food = food.filter(f => now - f.timestamp < 60000).slice(0, 200);
+        debugLog("MEMORY: Food array cleaned and capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old stars (shouldn't grow but safety check)
+    if (stars.length > 300) {
+        stars = stars.slice(0, 300);
+        debugLog("MEMORY: Stars array capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old puddles
+    if (puddles.length > 50) {
+        puddles = puddles.slice(0, 50);
+        debugLog("MEMORY: Puddles array capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old worms
+    if (worms.length > 100) {
+        worms = worms.slice(0, 100);
+        debugLog("MEMORY: Worms array capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old ants
+    if (ants.length > 150) {
+        ants = ants.slice(0, 150);
+        debugLog("MEMORY: Ants array capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old butterflies
+    if (butterflies.length > 30) {
+        butterflies = butterflies.slice(0, 30);
+        debugLog("MEMORY: Butterflies array capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old twigs
+    if (twigs.length > 80) {
+        twigs = twigs.slice(0, 80);
+        debugLog("MEMORY: Twigs array capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old flowers
+    if (flowers.length > 100) {
+        flowers = flowers.slice(0, 100);
+        debugLog("MEMORY: Flowers array capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old food caches
+    if (foodCaches.length > 50) {
+        foodCaches = foodCaches.filter(c => now - c.createdAt < 259200000); // 3 days
+        if (foodCaches.length > 50) {
+            foodCaches = foodCaches.slice(0, 50);
+        }
+        debugLog("MEMORY: Food caches cleaned", DEBUG_LEVELS.WARNING);
+    }
+
+    // Clean up old mushroom clusters
+    if (mushroomClusters.length > 20) {
+        mushroomClusters = mushroomClusters.slice(0, 20);
+        debugLog("MEMORY: Mushroom clusters capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Safety cap on birds (prevent runaway spawning)
+    if (birds.length > 50) {
+        birds = birds.slice(0, 50);
+        debugLog("MEMORY: Birds array capped at 50", DEBUG_LEVELS.WARNING);
+    }
+
+    // Safety cap on rats
+    if (rats.length > 30) {
+        rats = rats.slice(0, 30);
+        debugLog("MEMORY: Rats array capped", DEBUG_LEVELS.WARNING);
+    }
+
+    // Safety cap on owls
+    if (owls.length > 10) {
+        owls = owls.slice(0, 10);
+        debugLog("MEMORY: Owls array capped", DEBUG_LEVELS.WARNING);
+    }
 
     if (simulationTime % GUARANTEED_TREE_CHECK_RATE < 16) {
         checkEcosystemHealth();
@@ -21137,16 +21372,37 @@ canvas.addEventListener('mousemove', (e) => {
 canvas.addEventListener('touchstart', (e) => {
     e.preventDefault(); // Prevent scrolling
     if (e.touches.length > 0) {
+        // Initialize audio on first touch (required by browsers)
+        if (!audioContext) {
+            initializeAudio();
+        }
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+
         const rect = canvas.getBoundingClientRect();
-        const x = e.touches[0].clientX - rect.left;
-        const y = e.touches[0].clientY - rect.top;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-        // FIXED: Add bird locking functionality for mobile (same as desktop)
-        // Scale coordinates based on canvas transform
-        const scaledX = (x - cameraOffsetX) / cameraScale;
-        const scaledY = y / cameraScale;
+        // Calculate the correct coordinates, accounting for scroll position
+        const x = e.touches[0].clientX - rect.left - scrollLeft;
+        const y = e.touches[0].clientY - rect.top - scrollTop;
 
-        let clickedBird = false;
+        // Scale coordinates to match canvas coordinate system (same as desktop)
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const scaledX = x * scaleX;
+        const scaledY = y * scaleY;
+
+        // Restore show info button if it was hidden by Escape key
+        const toggleInfo = document.getElementById('toggleInfo');
+        if (window.showInfoButtonHidden && toggleInfo) {
+            toggleInfo.style.display = 'block';
+            window.showInfoButtonHidden = false;
+            debugLog("Show info button restored on touch");
+        }
+
+        let clickedAnAnimal = false;
 
         // Check if bird was clicked
         for (const bird of birds) {
@@ -21155,7 +21411,7 @@ canvas.addEventListener('touchstart', (e) => {
                 Math.pow(scaledY - bird.y, 2)
             );
             if (birdDist < 30) { // 30px click radius for birds
-                clickedBird = true;
+                clickedAnAnimal = true;
                 if (lockedAnimal === bird && lockedAnimalType === 'bird') {
                     // Unlock if clicking same bird
                     lockedAnimal = null;
@@ -21167,13 +21423,70 @@ canvas.addEventListener('touchstart', (e) => {
                     lockedAnimalType = 'bird';
                     lockedAnimalTime = Date.now();
                     debugLog(`Locked onto bird: ${getBirdName(bird)} (mobile)`);
+
+                    // Make the bird chirp when clicked/locked
+                    if (bird.chirp && typeof bird.chirp === 'function') {
+                        bird.chirp(CHIRP_TYPES.SOCIAL, 0.8);
+                    }
                 }
                 return; // Don't scatter food when clicking bird
             }
         }
 
-        // If didn't click a bird, scatter food
-        if (!clickedBird) {
+        // Check squirrels
+        for (const squirrel of squirrels) {
+            const squirrelDist = Math.sqrt(
+                Math.pow(scaledX - squirrel.x, 2) +
+                Math.pow(scaledY - squirrel.y, 2)
+            );
+            if (squirrelDist < 30) {
+                clickedAnAnimal = true;
+                if (lockedAnimal === squirrel && lockedAnimalType === 'squirrel') {
+                    lockedAnimal = null;
+                    lockedAnimalType = null;
+                    debugLog(`Unlocked from squirrel (mobile)`);
+                } else {
+                    lockedAnimal = squirrel;
+                    lockedAnimalType = 'squirrel';
+                    lockedAnimalTime = Date.now();
+                    debugLog(`Locked onto squirrel: ${getSquirrelName(squirrel)} (mobile)`);
+                }
+                return;
+            }
+        }
+
+        // Check rats
+        for (const rat of rats) {
+            const ratDist = Math.sqrt(
+                Math.pow(scaledX - rat.x, 2) +
+                Math.pow(scaledY - rat.y, 2)
+            );
+            if (ratDist < 30) {
+                clickedAnAnimal = true;
+                if (lockedAnimal === rat && lockedAnimalType === 'rat') {
+                    lockedAnimal = null;
+                    lockedAnimalType = null;
+                    debugLog(`Unlocked from rat (mobile)`);
+                } else {
+                    lockedAnimal = rat;
+                    lockedAnimalType = 'rat';
+                    lockedAnimalTime = Date.now();
+                    debugLog(`Locked onto rat: ${getRatName(rat)} (mobile)`);
+                }
+                return;
+            }
+        }
+
+        // Mobile-friendly unlock: If locked on an animal but touched elsewhere, unlock
+        if (lockedAnimal && !clickedAnAnimal) {
+            lockedAnimal = null;
+            lockedAnimalType = null;
+            debugLog(`Unlocked by touching elsewhere (mobile)`);
+            return; // Don't scatter food when unlocking
+        }
+
+        // If didn't click an animal, scatter food
+        if (!clickedAnAnimal) {
             scatterFood(scaledX, scaledY, 5, true);
             debugLog(`Food scattered via touch at (${scaledX}, ${scaledY})`);
         }
