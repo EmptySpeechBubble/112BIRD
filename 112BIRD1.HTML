@@ -19859,9 +19859,41 @@ function drawFullScene() {
     }
 
     // ===== UI LAYER (top, no camera transform) =====
-    // Draw chirp music notes
+    // Draw chirp music notes and emoji conversations
     const now = Date.now();
     drawChirpMusicNotes(now);
+
+    // Draw emoji conversations (without updating state)
+    emojiConversations.forEach(convo => {
+        convo.exchanges.forEach(exchange => {
+            // Only show if it's time for this exchange
+            if (now >= exchange.timestamp && now - exchange.timestamp < 2000) {
+                const age = now - exchange.timestamp;
+                const progress = age / 2000;
+                const opacity = 1 - progress;
+                const floatUp = progress * 30;
+
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const x = exchange.bird.x;
+                const y = exchange.bird.y - 20 - floatUp;
+
+                // White border/outline
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 4;
+                ctx.strokeText(exchange.emoji, x, y);
+
+                // Draw emoji
+                ctx.fillText(exchange.emoji, x, y);
+
+                ctx.restore();
+            }
+        });
+    });
 
     // Draw bird interaction UI
     drawBirdInteractionUI();
